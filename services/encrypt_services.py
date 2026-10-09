@@ -10,7 +10,7 @@ def encrypt(password: str, key: str):
     try:
         aesgcm = AESGCM(key)
     except ValueError:
-        print("Invalid key")
+        print("Invalid key length")
 
     nonce = os.urandom(12)  # Zwraca <bytes>
     ciphertext = aesgcm.encrypt(nonce, password.encode("utf-8"), None)
