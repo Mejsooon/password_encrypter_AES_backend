@@ -1,8 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+
+MAX_PASSWORD_LENGTH = 1024
 
 
 class EncryptRequest(BaseModel):
-    password: str
+    password: str = Field(min_length=1, max_length=MAX_PASSWORD_LENGTH)
     key: str | None = None # <None = None> oznacza, że w requescie można całkowicie pominąć <key>
 
 
