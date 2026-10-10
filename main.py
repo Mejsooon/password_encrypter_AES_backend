@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from schemas.passwords import PasswordResponse, PasswordHash
+from schemas.passwords import  EncryptResponse, EncryptRequest
 from services import encrypt_services
 
 app = FastAPI()
@@ -9,8 +9,8 @@ app = FastAPI()
 def root():
     return {"Hello": "World"}
 
-@app.get("/hashed_password", response_model=PasswordResponse)
-def hashed_password(data: PasswordHash):
-    password = encrypt_services.encrypt(data.password, None)
+@app.post("/encrypt", response_model=EncryptResponse)
+def encrypt_password(data: EncryptRequest):
+    encrypted_password = encrypt_services.encrypt(data.password, data.key)
 
-    return password
+    return encrypted_password

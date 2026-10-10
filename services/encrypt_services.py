@@ -16,19 +16,20 @@ def generate_key():
 def encrypt(password: str, key: str):
 
     if key is None:
-        key = AESGCM.generate_key(bit_length=128)
+        key_bytes = AESGCM.generate_key(bit_length=128)
+    else:
+        key_bytes = base64.b64decode(key)
 
-    try:
-        aesgcm = AESGCM(key)
-    except ValueError:
-        print("Invalid key length")
+    aesgcm = AESGCM(key_bytes)
 
     nonce = os.urandom(12)  # Zwraca <bytes>
-
     ciphertext = aesgcm.encrypt(nonce, password.encode("utf-8"), None)
-    string_ciphertext = base64.b64encode(ciphertext).decode("utf-8")
 
-    return string_ciphertext, nonce.decode("utf-8"), key
+    return {
+        "encrypted_password": base64.b64encode(ciphertext).decode("utf-8"),
+        "nonce": base64.b64encode(nonce).decode("utf-8"),
+        "key": base64.b64encode(key_bytes).decode("utf-8")
+    }
 
 
 def decrypt(ciphertext, nonce, key):

@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 
-class PasswordHash(BaseModel):
+class EncryptRequest(BaseModel):
     password: str
-    key: str | None
+    key: str | None = None
 
-class PasswordResponse(BaseModel):
-    hashed_password: str
+class EncryptResponse(BaseModel):
+    encrypted_password: str
     key: str
     nonce: str
