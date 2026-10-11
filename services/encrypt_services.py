@@ -1,8 +1,9 @@
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import base64
+import binascii
 import os
-from core.exceptions import InvalidKeyError, InvalidCiphertextError, InvalidNonceError, DecryptionFailedError
+from core.exceptions import InvalidEncryptionData
 
 KEY_SIZES = (16, 24, 32)
 TAG_SIZE = 16
@@ -23,11 +24,11 @@ def encrypt(password: str, key: str | None = None) -> dict[str, str]:
     else:
         try:
             key_bytes = base64.b64decode(key, validate=True)
-        except ValueError as exc:
-            raise InvalidKeyError() from exc
+        except binascii.Error as exc:
+            raise InvalidEncryptionData("key is not valid base64") from exc
 
     if len(key_bytes) not in KEY_SIZES:
-        raise InvalidKeyError()
+        raise InvalidEncryptionData("key must be 16, 24 or 32 bytes long")
 
     aesgcm = AESGCM(key_bytes)
     nonce = os.urandom(NONCE_SIZE)
@@ -45,28 +46,28 @@ def decrypt(ciphertext: str, nonce: str, key: str) -> dict[str, str]:
     try:
         ciphertext_bytes = base64.b64decode(ciphertext, validate=True)
     except ValueError as exc:
-        raise InvalidCiphertextError() from exc
+        raise InvalidEncryptionData("ciphertext is not valid base64") from exc
 
     if len(ciphertext_bytes) < TAG_SIZE:
-        raise InvalidCiphertextError()
+        raise InvalidEncryptionData("ciphertext is too short")
 
     # nonce
     try:
         nonce_bytes = base64.b64decode(nonce, validate=True)
     except ValueError as exc:
-        raise InvalidNonceError() from exc
+        raise InvalidEncryptionData("nonce is not valid base64") from exc
 
     if len(nonce_bytes) != NONCE_SIZE:
-        raise InvalidNonceError()
+        raise InvalidEncryptionData(f"nonce must be {NONCE_SIZE} bytes long")
 
     # key
     try:
         key_bytes = base64.b64decode(key, validate=True)
     except ValueError as exc:
-        raise InvalidKeyError() from exc
+        raise InvalidEncryptionData("key is not valid base64") from exc
 
     if len(key_bytes) not in KEY_SIZES:
-        raise InvalidKeyError()
+        raise InvalidEncryptionData("key must be 16, 24 or 32 bytes long")
 
     aesgcm = AESGCM(key_bytes)
 
@@ -75,4 +76,4 @@ def decrypt(ciphertext: str, nonce: str, key: str) -> dict[str, str]:
 
         return {"decrypted_password": password.decode("utf-8")}
     except (InvalidTag, UnicodeDecodeError) as exc:
-        raise DecryptionFailedError() from exc
+        raise InvalidEncryptionData("Invalid Encryption Data") from exc
