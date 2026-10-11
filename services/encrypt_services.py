@@ -10,7 +10,7 @@ TAG_SIZE = 16  # Długość znacznika uwierzytelniającego, który AES-GCM dokle
 
 
 class InvalidEncryptionData(ValueError):
-    """Dane wejściowe są niepoprawne albo nie udało się ich odszyfrować."""
+    pass
 
 
 def decode_base64(value: str, field: str) -> bytes:
