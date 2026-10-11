@@ -18,6 +18,8 @@ def decode_key(key: str) -> bytes:
     if len(key_bytes) not in KEY_SIZES:
         raise InvalidEncryptionData("key must be 16, 24 or 32 bytes long")
 
+    return key_bytes
+
 
 def decode_nonce(nonce: str) -> bytes:
     try:
@@ -28,6 +30,8 @@ def decode_nonce(nonce: str) -> bytes:
     if len(nonce_bytes) != NONCE_SIZE:
         raise InvalidEncryptionData(f"nonce must be {NONCE_SIZE} bytes long")
 
+    return nonce_bytes
+
 
 def decode_ciphertext(ciphertext: str) -> bytes:
     try:
@@ -37,6 +41,8 @@ def decode_ciphertext(ciphertext: str) -> bytes:
 
     if len(ciphertext_bytes) < TAG_SIZE:
         raise InvalidEncryptionData("ciphertext is too short")
+
+    return ciphertext_bytes
 
 
 
