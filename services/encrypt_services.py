@@ -24,7 +24,7 @@ def encrypt(password: str, key: str | None = None) -> dict[str, str]:
     else:
         try:
             key_bytes = base64.b64decode(key, validate=True)
-        except binascii.Error as exc:
+        except (binascii.Error, ValueError) as exc:
             raise InvalidEncryptionData("key is not valid base64") from exc
 
     if len(key_bytes) not in KEY_SIZES:
