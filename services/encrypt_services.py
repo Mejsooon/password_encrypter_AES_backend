@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import base64
 import binascii
 import os
-from core.exceptions import InvalidEncryptionData
+from core.exceptions import InvalidNonceError, InvalidKeyError, InvalidCiphertextError, DecryptionFailedError
 
 KEY_SIZES = (16, 24, 32)
 TAG_SIZE = 16
@@ -12,11 +12,11 @@ NONCE_SIZE = 12
 def decode_key(key: str) -> bytes:
     try:
         key_bytes = base64.b64decode(key, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise InvalidEncryptionData("key is not valid base64") from exc
+    except ValueError as exc:
+        raise InvalidKeyError() from exc
 
     if len(key_bytes) not in KEY_SIZES:
-        raise InvalidEncryptionData("key must be 16, 24 or 32 bytes long")
+        raise InvalidKeyError()
 
     return key_bytes
 
@@ -24,11 +24,11 @@ def decode_key(key: str) -> bytes:
 def decode_nonce(nonce: str) -> bytes:
     try:
         nonce_bytes = base64.b64decode(nonce, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise InvalidEncryptionData("nonce is not valid base64") from exc
+    except ValueError as exc:
+        raise InvalidNonceError() from exc
 
     if len(nonce_bytes) != NONCE_SIZE:
-        raise InvalidEncryptionData(f"nonce must be {NONCE_SIZE} bytes long")
+        raise InvalidNonceError()
 
     return nonce_bytes
 
@@ -36,11 +36,11 @@ def decode_nonce(nonce: str) -> bytes:
 def decode_ciphertext(ciphertext: str) -> bytes:
     try:
         ciphertext_bytes = base64.b64decode(ciphertext, validate=True)
-    except (binascii.Error, ValueError) as exc:
-        raise InvalidEncryptionData("ciphertext is not valid base64") from exc
+    except ValueError as exc:
+        raise InvalidCiphertextError() from exc
 
     if len(ciphertext_bytes) < TAG_SIZE:
-        raise InvalidEncryptionData("ciphertext is too short")
+        raise InvalidCiphertextError()
 
     return ciphertext_bytes
 
@@ -83,4 +83,4 @@ def decrypt(ciphertext: str, nonce: str, key: str) -> dict[str, str]:
         password = aesgcm.decrypt(nonce_bytes, ciphertext_bytes, None)
         return {"decrypted_password": password.decode("utf-8")}
     except (InvalidTag, UnicodeDecodeError) as exc:
-        raise InvalidEncryptionData("Invalid Encryption Data") from exc
+        raise DecryptionFailedError() from exc
