@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encrypter – szyfrowanie haseł AES-GCM</title>
+
+  <!-- Fonty Geist i Geist Mono z Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Nasze style -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===================== NAGŁÓWEK ===================== -->
+  <header class="header">
+    <div class="header-inner">
+      <a href="#" class="logo">
+        <span class="logo-icon">
+          <!-- Ikona kłódki -->
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="11" width="16" height="10" rx="2"></rect>
+            <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
+          </svg>
+        </span>
+        <span class="logo-text">Encrypter</span>
+        <span class="logo-badge">AES-GCM</span>
+      </a>
+
+      <nav class="nav" aria-label="Główna">
+        <a href="#jak-to-dziala">Jak to działa</a>
+        <a href="#api">API</a>
+        <a href="https://github.com/Mejsooon/password_encrypter_AES_backend" class="nav-external">
+          GitHub
+          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17 17 7"></path>
+            <path d="M8 7h9v9"></path>
+          </svg>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===================== TREŚĆ ===================== -->
+  <main class="main">
+
+    <!-- Hero: tytuł i opis -->
+    <div class="hero">
+      <span class="pill">FastAPI · AES-GCM · 128/192/256 bit</span>
+      <h1>Szyfruj hasła<br>w kilka sekund</h1>
+      <p>Wpisz hasło, a dostaniesz szyfrogram, nonce i klucz. Odszyfrujesz je tutaj w dowolnym momencie.</p>
+    </div>
+
+    <!-- Karta z zakładkami -->
+    <section class="card" aria-label="Szyfrator">
+
+      <!-- Przełącznik zakładek -->
+      <div class="tabs" role="tablist" aria-label="Tryb">
+        <button class="tab active" role="tab" aria-selected="true" data-tab="encrypt">Szyfruj</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="decrypt">Odszyfruj</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="key">Klucz</button>
+      </div>
+
+      <!-- ===== Zakładka: SZYFRUJ ===== -->
+      <div class="panel" id="panel-encrypt">
+        <div class="field">
+          <label for="encrypt-password">Hasło</label>
+          <input id="encrypt-password" type="password" placeholder="Wpisz hasło do zaszyfrowania" maxlength="1024">
+          <span class="hint">Od 1 do 1024 znaków</span>
+        </div>
+
+        <div class="field">
+          <label for="encrypt-key">Klucz <span class="optional">(opcjonalnie)</span></label>
+          <div class="input-row">
+            <input id="encrypt-key" class="mono" type="text" placeholder="Zostaw puste, aby wygenerować nowy">
+            <button type="button" class="btn-secondary" id="encrypt-generate-key-btn">Generuj</button>
+          </div>
+        </div>
+
+        <button type="button" class="btn-primary" id="encrypt-btn">Zaszyfruj</button>
+
+        <!-- Miejsce na błąd (domyślnie ukryte) -->
+        <div class="alert" id="encrypt-error" role="alert" hidden>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path>
+          </svg>
+          <div>
+            <span class="alert-title">Nie udało się zaszyfrować</span>
+            <span class="alert-text" id="encrypt-error-text"></span>
+          </div>
+        </div>
+
+        <!-- Wynik (domyślnie ukryty) -->
+        <div class="result" id="encrypt-result" hidden>
+          <div class="result-header">
+            <span class="result-title">Wynik</span>
+            <span class="success">
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+              Zaszyfrowano
+            </span>
+          </div>
+
+          <div class="output">
+            <span class="output-label">encrypted_password</span>
+            <div class="output-box">
+              <code id="result-ciphertext"></code>
+              <button type="button" class="btn-copy" data-copy="result-ciphertext" aria-label="Kopiuj encrypted_password">Kopiuj</button>
+            </div>
+          </div>
+
+          <div class="output">
+            <span class="output-label">nonce</span>
+            <div class="output-box">
+              <code id="result-nonce"></code>
+              <button type="button" class="btn-copy" data-copy="result-nonce" aria-label="Kopiuj nonce">Kopiuj</button>
+            </div>
+          </div>
+
+          <div class="output">
+            <span class="output-label">key</span>
+            <div class="output-box">
+              <code id="result-key"></code>
+              <button type="button" class="btn-copy" data-copy="result-key" aria-label="Kopiuj key">Kopiuj</button>
+            </div>
+          </div>
+
+          <p class="result-note">Zapisz klucz i nonce. Bez nich nie odszyfrujesz hasła.</p>
+        </div>
+      </div>
+
+      <!-- ===== Zakładka: ODSZYFRUJ ===== -->
+      <div class="panel" id="panel-decrypt" hidden>
+        <div class="field">
+          <label for="decrypt-ciphertext">Szyfrogram</label>
+          <input id="decrypt-ciphertext" class="mono" type="text" placeholder="encrypted_password (base64)">
+        </div>
+
+        <div class="two-columns">
+          <div class="field">
+            <label for="decrypt-nonce">Nonce</label>
+            <input id="decrypt-nonce" class="mono" type="text" placeholder="12 bajtów (base64)">
+          </div>
+          <div class="field">
+            <label for="decrypt-key">Klucz</label>
+            <input id="decrypt-key" class="mono" type="text" placeholder="16, 24 lub 32 bajty (base64)">
+          </div>
+        </div>
+
+        <button type="button" class="btn-primary" id="decrypt-btn">Odszyfruj</button>
+
+        <div class="alert" id="decrypt-error" role="alert" hidden>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path>
+          </svg>
+          <div>
+            <span class="alert-title">Nie udało się odszyfrować</span>
+            <span class="alert-text" id="decrypt-error-text"></span>
+          </div>
+        </div>
+
+        <div class="result" id="decrypt-result" hidden>
+          <div class="output">
+            <span class="output-label">decrypted_password</span>
+            <div class="output-box output-box-success">
+              <code id="result-password"></code>
+              <button type="button" class="btn-copy" data-copy="result-password" aria-label="Kopiuj odszyfrowane hasło">Kopiuj</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Zakładka: KLUCZ ===== -->
+      <div class="panel" id="panel-key" hidden>
+        <p class="panel-text">Losowy klucz 128-bitowy (16 bajtów) zakodowany w base64. Możesz go potem wkleić w polu „Klucz” przy szyfrowaniu.</p>
+
+        <button type="button" class="btn-primary" id="key-btn">Generuj klucz</button>
+
+        <div class="alert" id="key-error" role="alert" hidden>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path>
+          </svg>
+          <div>
+            <span class="alert-title">Nie udało się wygenerować klucza</span>
+            <span class="alert-text" id="key-error-text"></span>
+          </div>
+        </div>
+
+        <div class="output-box" id="key-result" hidden>
+          <code id="result-new-key"></code>
+          <button type="button" class="btn-copy" data-copy="result-new-key" aria-label="Kopiuj klucz">Kopiuj</button>
+        </div>
+      </div>
+
+      <!-- Ostrzeżenie na dole karty -->
+      <div class="card-footer">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 9v4"></path><path d="M12 17h.01"></path>
+          <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path>
+        </svg>
+        <p>Szyfrowanie odbywa się na serwerze, więc hasło i klucz są przesyłane przez sieć. Nie wpisuj tu haseł, których naprawdę używasz.</p>
+      </div>
+    </section>
+
+    <!-- Jak to działa -->
+    <section class="features" id="jak-to-dziala" aria-label="Jak to działa">
+      <div class="feature">
+        <span class="feature-title">AES-GCM</span>
+        <span class="feature-text">Szyfrowanie z uwierzytelnieniem. Każda zmiana szyfrogramu zostanie wykryta.</span>
+      </div>
+      <div class="feature">
+        <span class="feature-title">Nowy nonce</span>
+        <span class="feature-text">12 losowych bajtów przy każdym szyfrowaniu, nawet tym samym kluczem.</span>
+      </div>
+      <div class="feature">
+        <span class="feature-title">Bez bazy danych</span>
+        <span class="feature-text">Backend niczego nie zapisuje. Wynik istnieje tylko na Twoim ekranie.</span>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== STOPKA ===================== -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>Encrypter · projekt open source</span>
+      <span class="mono" id="api">POST /api/encrypt · POST /api/decrypt · GET /api/key</span>
+    </div>
+  </footer>
+
+  <!-- Dymek "Skopiowano do schowka" (domyślnie ukryty) -->
+  <div class="toast" id="toast" role="status" hidden>
+    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+    Skopiowano do schowka
+  </div>
+
+  <!-- Skrypt na końcu body, żeby cały HTML był już wczytany -->
+  <script src="app.js"></script>
+</body>
+</html>
