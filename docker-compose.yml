@@ -1,0 +1,22 @@
+services:
+
+  # ---------- Backend: FastAPI ----------
+  backend:
+    build: .                     # buduje obraz z Dockerfile w tym folderze
+    restart: unless-stopped      # uruchom ponownie po awarii lub restarcie serwera
+    expose:
+      - "8000"                   # port widoczny TYLKO dla innych kontenerów (nie z internetu)
+
+  # ---------- nginx: frontend + reverse proxy ----------
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"                  # port komputera : port w kontenerze
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro              # pliki strony (ro = tylko do odczytu)
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro   # nasza konfiguracja nginx
+    depends_on:
+      backend:
+        condition: service_healthy   # nginx startuje dopiero, gdy backend odpowiada na /api/health
+  
