@@ -148,10 +148,10 @@ def test_decryption_with_tampered_ciphertext_fails():
 # --- Warstwa API ---
 
 def test_api_encrypt_and_decrypt():
-    body = client.post("/encrypt", json={"password": "Test123"}).json()
+    body = client.post("/api/encrypt", json={"password": "Test123"}).json()
 
     response = client.post(
-        "/decrypt",
+        "/api/decrypt",
         json={"ciphertext": body["encrypted_password"], "nonce": body["nonce"], "key": body["key"]},
     )
 
@@ -160,9 +160,9 @@ def test_api_encrypt_and_decrypt():
 
 
 def test_api_key_can_be_used_for_encryption():
-    key = client.get("/key").json()
+    key = client.get("/api/key").json()
 
-    response = client.post("/encrypt", json={"password": "Test123", "key": key})
+    response = client.post("/api/encrypt", json={"password": "Test123", "key": key})
 
     assert response.status_code == 200, response.json()
     assert response.json()["key"] == key
@@ -170,17 +170,17 @@ def test_api_key_can_be_used_for_encryption():
 
 @pytest.mark.parametrize("key", [NOT_BASE64, TOO_SHORT])
 def test_api_encrypt_with_invalid_key_returns_400(key):
-    response = client.post("/encrypt", json={"password": "Test123", "key": key})
+    response = client.post("/api/encrypt", json={"password": "Test123", "key": key})
 
     assert response.status_code == 400, response.json()
     assert response.json() == {"detail": InvalidKeyError.detail}
 
 
 def test_api_decrypt_with_wrong_key_returns_400():
-    body = client.post("/encrypt", json={"password": "Test123"}).json()
+    body = client.post("/api/encrypt", json={"password": "Test123"}).json()
 
     response = client.post(
-        "/decrypt",
+        "/api/decrypt",
         json={"ciphertext": body["encrypted_password"], "nonce": body["nonce"], "key": generate_key()},
     )
 
@@ -200,11 +200,11 @@ def test_api_decrypt_with_wrong_key_returns_400():
     ],
 )
 def test_api_decrypt_with_invalid_field_returns_400(field, value, exc_class):
-    body = client.post("/encrypt", json={"password": "Test123"}).json()
+    body = client.post("/api/encrypt", json={"password": "Test123"}).json()
     payload = {"ciphertext": body["encrypted_password"], "nonce": body["nonce"], "key": body["key"]}
     payload[field] = value
 
-    response = client.post("/decrypt", json=payload)
+    response = client.post("/api/decrypt", json=payload)
 
     assert response.status_code == 400, response.json()
     assert response.json() == {"detail": exc_class.detail}
@@ -212,12 +212,31 @@ def test_api_decrypt_with_invalid_field_returns_400(field, value, exc_class):
 
 @pytest.mark.parametrize("password", ["", "a" * 1025])
 def test_api_encrypt_with_invalid_password_returns_422(password):
-    response = client.post("/encrypt", json={"password": password})
+    response = client.post("/api/encrypt", json={"password": password})
 
     assert response.status_code == 422
 
 
 def test_api_decrypt_without_required_field_returns_422():
-    response = client.post("/decrypt", json={"ciphertext": "abc", "nonce": "abc"})
+    response = client.post("/api/decrypt", json={"ciphertext": "abc", "nonce": "abc"})
 
     assert response.status_code == 422
+
+
+# --- Prefiks /api ---
+
+def test_api_health_returns_ok():
+    response = client.get("/api/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [("post", "/encrypt"), ("post", "/decrypt"), ("get", "/key"), ("get", "/")],
+)
+def test_old_paths_without_api_prefix_return_404(method, path):
+    response = client.request(method, path)
+
+    assert response.status_code == 404
